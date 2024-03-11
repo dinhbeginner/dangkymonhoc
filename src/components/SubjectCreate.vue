@@ -35,6 +35,7 @@
     <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
   </div>
 </template>
+
 <script>
 import { booksRef, push } from '@/firebase';
 
@@ -59,14 +60,15 @@ export default {
   },
   computed: {
     filteredCourses() {
-      if (this.semester === '1') {
-        return this.courses.slice(0, 3);
-      } else if (this.semester === '2') {
-        return this.courses.slice(3);
-      } else {
-        return [];
-      }
+    if (this.semester === '1') {
+      return this.courses.slice(0, 3);
+    } else if (this.semester === '2') {
+      return this.courses.slice(3); // Slice from index 3 onwards to include courses 4, 5, and 6
+    } else {
+      // If semester is not specified or unexpected value, return all courses
+      return this.courses;
     }
+  }
   },
   methods: {
     register() {
@@ -97,25 +99,23 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .div {
   background: linear-gradient(#ede0cf, #d6ad93);
-  height: calc(100%);
-  width: calc(100%);
+  height: 100%;
+  width: 100%;
   border-radius: 10px;
   border: 2px solid white;
 }
 h2 {
   background-color: #f0d3bf;
-  padding-block: 20px;
-  padding-inline: 20px;
+  padding: 20px;
   border-radius: 10px;
 }
 button {
   transition: color 0.8s ease-in-out, transform 0.8s ease-in-out, background-color 0.8s ease-in-out;
   background-color: #ffb9b4;
-  font-weight: 10px;
+  font-weight: bold;
   border: 3px solid #2aafc1;
 }
 button:hover {

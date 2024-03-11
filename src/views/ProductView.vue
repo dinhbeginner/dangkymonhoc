@@ -1,4 +1,36 @@
 <template>
+  <!-- Form chỉnh sửa -->
+  <div v-if="editingRegistrationId !== null">
+    <h3>Chỉnh sửa thông tin đăng ký</h3>
+    <form @submit.prevent="updateRegistration">
+      <!-- Các trường để chỉnh sửa thông tin -->
+      <div class="form-group">
+        <label for="editedStudentID">MSSV:</label>
+        <input v-model="editedStudentID" type="text" class="form-control" id="editedStudentID">
+      </div>
+      <div class="form-group">
+        <label for="editedFullName">Họ và Tên:</label>
+        <input v-model="editedFullName" type="text" class="form-control" id="editedFullName">
+      </div>
+      <div class="form-group">
+        <label for="editedSemester">Học kỳ:</label>
+     
+        <select v-model="editedSemester" class="form-control" id="editedSemester" required>
+              <option value="">Chọn Học Kỳ</option>
+              <option value="1">Học Kỳ 1</option>
+              <option value="2">Học Kỳ 2</option>
+            </select>
+      </div>
+      <div class="form-group">
+        <label for="editedSubject">Môn Học:</label>
+        <input v-model="editedSubject" type="text" class="form-control" id="editedSubject">
+      </div>
+      <!-- Nút cập nhật và hủy -->
+      <button type="submit" class="btn btn-primary">Cập nhật</button>
+      <button @click="cancelEdit" class="btn btn-secondary">Hủy</button>
+    </form>
+  </div>
+  
   <div class="container pt-5 pb-5">
     <!-- Input để nhập MSSV hoặc chọn Học Kỳ -->
     <input v-model="searchText" type="text" placeholder="Nhập MSSV hoặc Chọn Học Kỳ" class="form-control mb-3" />
@@ -26,7 +58,8 @@
           <td>{{ registration.semester }}</td>
           <td>{{ getCourseName(registration.courseId) }}</td>
           <td>
-            <router-link :to="'/edit/' + registration.id" class="btn btn-primary me-2">Edit</router-link>
+            <!-- Thêm sự kiện click để gọi phương thức editRegistration -->
+            <button @click="editRegistration(registration.id)" class="btn btn-primary btn-sm">Edit</button>
             <button @click="deleteRegistration(registration.id)" class="btn btn-danger btn-sm">Delete</button>
           </td>
         </tr>
@@ -38,18 +71,28 @@
 <script>
 import { onValue } from 'firebase/database';
 import { booksRef } from '@/firebase';
+import { ref, update } from 'firebase/database';
 
 export default {
   data() {
     return {
       registrations: [],
+    
       courses: [
         { id: 1, name: 'Môn 1' },
         { id: 2, name: 'Môn 2' },
-        { id: 3, name: 'Môn 3' }
+        { id: 3, name: 'Môn 3' },
+        { id: 4, name: 'Môn 4' },
+        { id: 5, name: 'Môn 5' },
+        { id: 6, name: 'Môn 6' }
       ],
       searchText: '', // Biến để lưu trữ MSSV hoặc Học Kỳ được nhập từ người dùng
-      searchType: 'studentID' // Loại tìm kiếm mặc định là MSSV
+      searchType: 'studentID', // Loại tìm kiếm mặc định là MSSV
+      editingRegistrationId: null,
+      editedStudentID: '',
+      editedFullName: '',
+      editedSemester: '',
+      editedSubject:'',
     };
   },
   methods: {
@@ -68,7 +111,45 @@ export default {
       const course = this.courses.find(course => course.id === courseId);
       return course ? course.name : '';
     },
- 
+    editRegistration(registrationId) {
+      const registration = this.registrations.find(registration => registration.id === registrationId);
+      if (registration) {
+        this.editingRegistrationId = registration.id;
+        this.editedStudentID = registration.studentID;
+        this.editedFullName = registration.fullName;
+        this.editedSemester = registration.semester;
+        this.editedSubject =  this.getCourseName(registration.courseId);
+      }
+    },
+    cancelEdit() {
+      this.editingRegistrationId = null;
+      this.editedStudentID = '';
+      this.editedFullName = '';
+      this.editedSemester = '';
+    },
+    updateRegistration() {
+  const updatedRegistration = {
+    studentID: this.editedStudentID,
+    fullName: this.editedFullName,
+    semester: this.editedSemester,
+    courseId: this.courses.find(course => course.name === this.editedSubject)?.id || null
+  };
+
+  // Get the Firebase database reference for the registration
+  const registrationRef = ref(booksRef.child(this.editingRegistrationId)); // Use child() method to specify the child node
+
+  // Perform the update operation
+  update(registrationRef, updatedRegistration)
+    .then(() => {
+      console.log('Cập nhật thành công');
+      // After successful update, reset the values and hide the edit form
+      this.cancelEdit();
+    })
+    .catch(error => {
+      console.error('Lỗi khi cập nhật:', error);
+    });
+},
+  
   },
   computed: {
     filteredRegistrations() {
@@ -97,19 +178,16 @@ export default {
 
 <style scoped>
 div{
-
   background: linear-gradient(#ede0cf, #d6ad93);
 }
 /* CSS cho input */
 .input-container {
   margin-bottom: 20px;
 }
-
 /* CSS cho select */
 .select-container {
   margin-bottom: 20px;
 }
-
 /* CSS cho table */
 .table-container {
   margin-top: 20px;
@@ -117,7 +195,6 @@ div{
 table{
   background-color: #fff;
 }
-
 /* CSS cho nút Edit */
 .btn-edit {
   background-color: #007bff;
@@ -127,11 +204,9 @@ table{
   border-radius: 4px;
   transition: background-color 0.3s ease;
 }
-
 .btn-edit:hover {
   background-color: #0056b3;
 }
-
 /* CSS cho nút Delete */
 .btn-delete {
   background-color: #dc3545;
@@ -141,7 +216,6 @@ table{
   border-radius: 4px;
   transition: background-color 0.3s ease;
 }
-
 .btn-delete:hover {
   background-color: #bd2130;
 }
